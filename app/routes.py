@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
-from .forms import RegisterForm, LoginForm
-from .models import User
+from .forms import RegisterForm, LoginForm, ExpenseForm
+from .models import User, Expense
 from . import db
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
 main = Blueprint('main', __name__)
@@ -34,7 +34,21 @@ def login():
         flash('Invalid username or password.')
     return render_template('login.html', form=form)
 
-@main.route('/dashboard')
+@main.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
-    return 'Welcome to your dashboard!'
+    form = ExpenseForm()
+    if form.validate_on_submit():
+        new_expense = Expense(
+            name=form.name.data,
+            amount=form.amount.data,
+            date=form.date.data,
+            user_id=current_user.id
+        )
+        db.session.add(new_expense)
+        db.session.commit()
+        flash('Expense added successfully.')
+        return redirect(url_for('main.dashboard'))
+    
+    expenses = Expense.query.filter_by(user_id=current_user.id).order_by(Expense.date.desc()).all()
+    return render_template('dashboard.html', form=form, expenses=expenses)

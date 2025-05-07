@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+</head>
+<body>
+    <h2>Welcome, {{ current_user.username }}!</h2>
+
+    <h3>Add Expense</h3>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        {{ form.name.label }} {{ form.name() }}<br>
+        {{ form.amount.label }} {{ form.amount() }}<br>
+        {{ form.date.label }} {{ form.date() }}<br>
+        {{ form.submit() }}
+    </form>
+
+    <h3>Your Expenses</h3>
+    <ul>
+        {% for expense in expenses %}
+        <li>{{ expense.name }} - ${{ expense.amount }} on {{ expense.date.strftime('%Y-%m-%d') }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
