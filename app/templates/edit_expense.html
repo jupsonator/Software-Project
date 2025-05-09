@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Expense</title>
+</head>
+<body>
+    <h2>Edit Expense</h2>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        {{ form.name.label }} {{ form.name() }}<br>
+        {{ form.amount.label }} {{ form.amount() }}<br>
+        {{ form.date.label }} {{ form.date() }}<br>
+        {{ form.category.label }} {{ form.category() }}<br>
+        {{ form.submit() }}
+    </form>
+    <a href="{{ url_for('main.dashboard') }}">Back to Dashboard</a>
+</body>
+</html>

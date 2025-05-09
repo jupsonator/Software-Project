@@ -11,14 +11,34 @@
         {{ form.hidden_tag() }}
         {{ form.name.label }} {{ form.name() }}<br>
         {{ form.amount.label }} {{ form.amount() }}<br>
+        {{ form.category.label }} {{ form.category() }}<br>
         {{ form.date.label }} {{ form.date() }}<br>
         {{ form.submit() }}
+    </form>
+
+    <h3>Filter Expenses</h3>
+    <form method="GET" action="{{ url_for('main.dashboard') }}">
+        Category:
+        <select name="category">
+            <option value="">All</option>
+            <option value="Food">Food</option>
+            <option value="Leisure">Leisure</option>
+            <option value="Transport">Transport</option>
+            <option value="Bills">Bills</option>
+            <option value="Other">Other</option>
+        </select>
+        Date: <input type="date" name="date">
+        <input type="submit" value="Filter">
     </form>
 
     <h3>Your Expenses</h3>
     <ul>
         {% for expense in expenses %}
-        <li>{{ expense.name }} - ${{ expense.amount }} on {{ expense.date.strftime('%Y-%m-%d') }}</li>
+        <li>
+            {{ expense.name }} - ${{ expense.amount }} on {{ expense.date.strftime('%Y-%m-%d') }}
+            (Category: {{ expense.category }})
+            - <a href="{{ url_for('main.edit_expense', expense_id=expense.id) }}">Edit</a>
+        </li>
         {% endfor %}
     </ul>
 </body>

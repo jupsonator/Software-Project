@@ -42,6 +42,7 @@ def dashboard():
         new_expense = Expense(
             name=form.name.data,
             amount=form.amount.data,
+            category=form.category.data,
             date=form.date.data,
             user_id=current_user.id
         )
@@ -50,5 +51,49 @@ def dashboard():
         flash('Expense added successfully.')
         return redirect(url_for('main.dashboard'))
     
-    expenses = Expense.query.filter_by(user_id=current_user.id).order_by(Expense.date.desc()).all()
+    category = request.args.get('category')
+    date = request.args.get('date')
+
+    query = Expense.query.filter_by(user_id=current_user.id)
+    if category:
+        query = query.filter_by(category=category)
+    if date:
+        query = query.filter(Expense.date == date)
+
+    expenses = query.order_by(Expense.date.desc()).all()
+
     return render_template('dashboard.html', form=form, expenses=expenses)
+
+@main.route('/delete_expense/<int:expense_id>', methods=['POST'])
+@login_required
+def delete_expense(expense_id):
+    expense = Expense.query.get_or_404(expense_id)
+
+    if expense.user_id != current_user.id:
+        flash("You don't have permission to delete this expense.")
+        return redirect(url_for('main.dashboard'))
+
+    db.session.delete(expense)
+    db.session.commit()
+    flash('Expense deleted successfully.')
+    return redirect(url_for('main.dashboard'))
+
+@main.route('/edit_expense/<int:expense_id>', methods=['GET', 'POST'])
+@login_required
+def edit_expense(expense_id):
+    expense = Expense.query.get_or_404(expense_id)
+    if expense.user_id != current_user.id:
+        flash("You don't have permission to edit this expense.")
+        return redirect(url_for('main.dashboard'))
+
+    form = ExpenseForm(obj=expense)
+    if form.validate_on_submit():
+        expense.name = form.name.data
+        expense.amount = form.amount.data
+        expense.date = form.date.data
+        expense.category = form.category.data
+        db.session.commit()
+        flash('Expense updated.')
+        return redirect(url_for('main.dashboard'))
+
+    return render_template('edit_expense.html', form=form)
