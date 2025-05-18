@@ -4,6 +4,7 @@ from .models import User, Expense
 from . import db
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from collections import defaultdict
 
 main = Blueprint('main', __name__)
 
@@ -38,6 +39,7 @@ def login():
 @login_required
 def dashboard():
     form = ExpenseForm()
+
     if form.validate_on_submit():
         new_expense = Expense(
             name=form.name.data,
@@ -50,19 +52,47 @@ def dashboard():
         db.session.commit()
         flash('Expense added successfully.')
         return redirect(url_for('main.dashboard'))
-    
-    category = request.args.get('category')
-    date = request.args.get('date')
 
-    query = Expense.query.filter_by(user_id=current_user.id)
-    if category:
-        query = query.filter_by(category=category)
-    if date:
-        query = query.filter(Expense.date == date)
+   
+    category_filter = request.args.get('category')
+    sort_by = request.args.get('sort_by')
 
-    expenses = query.order_by(Expense.date.desc()).all()
+    expenses_query = Expense.query.filter_by(user_id=current_user.id)
 
-    return render_template('dashboard.html', form=form, expenses=expenses)
+    if category_filter:
+        expenses_query = expenses_query.filter_by(category=category_filter)
+
+    if sort_by == 'date_asc':
+        expenses_query = expenses_query.order_by(Expense.date.asc())
+    elif sort_by == 'date_desc':
+        expenses_query = expenses_query.order_by(Expense.date.desc())
+    elif sort_by == 'amount_asc':
+        expenses_query = expenses_query.order_by(Expense.amount.asc())
+    elif sort_by == 'amount_desc':
+        expenses_query = expenses_query.order_by(Expense.amount.desc())
+    else:
+        expenses_query = expenses_query.order_by(Expense.date.desc())  # default
+
+    expenses = expenses_query.all()
+
+    category_data = defaultdict(float)
+    total_amount = 0
+
+    for exp in expenses:
+        category_data[exp.category] += exp.amount
+        total_amount += exp.amount
+
+    categories = list(category_data.keys())
+    category_totals = list(category_data.values())
+
+    return render_template(
+        'dashboard.html',
+        form=form,
+        expenses=expenses,
+        total_amount=total_amount,
+        categories=categories,
+        category_totals=category_totals
+    )
 
 @main.route('/delete_expense/<int:expense_id>', methods=['POST'])
 @login_required
@@ -97,3 +127,10 @@ def edit_expense(expense_id):
         return redirect(url_for('main.dashboard'))
 
     return render_template('edit_expense.html', form=form)
+
+@main.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out.')
+    return redirect(url_for('main.login'))
